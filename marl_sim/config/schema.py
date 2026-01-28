@@ -67,7 +67,7 @@ class ObstacleConfig:
     [新增] 随机障碍物生成配置
     控制地图生成的难易程度
     """
-    enabled: bool = True        # 是否启用随机障碍物
+    enabled: bool = False        # 是否启用随机障碍物
     n_rect: int = 10            # 障碍物数量
     w_range: Tuple[int, int] = (3, 7)  # 宽度随机范围 (min, max)
     h_range: Tuple[int, int] = (3, 7)  # 高度随机范围 (min, max)
@@ -100,7 +100,7 @@ class SimConfig:
 
     # [新增] 强化学习奖励函数相关参数
     goal_tolerance: float = 0.5    # 到达目标的判定距离 (米)
-    collision_penalty: float = 1.0 # 发生碰撞时的扣分 (绝对值)
+    # collision_penalty: float = 1.0 # 发生碰撞时的扣分 (绝对值)
     distance_weight: float = 1.0   # 距离奖励的权重系数
 
     # 子模块配置
@@ -109,6 +109,10 @@ class SimConfig:
     render: RenderConfig = field(default_factory=RenderConfig)
     comm: CommConfig = field(default_factory=CommConfig)
     obstacles: ObstacleConfig = field(default_factory=ObstacleConfig) # [新增]
+
+    formation_weight: float = 2.0  # 编队位置误差权重
+    yaw_weight: float = 1.0  # 航向一致性权重
+    collision_penalty: float = 10.0  # 碰撞惩罚
 
     def validate(self) -> None:
         if self.dt <= 0:
