@@ -25,6 +25,8 @@ from marl_sim.env.communication import compute_adjacency
 # 注意：根据之前的文件结构，global_observation 在 marl_sim.env.observation
 from marl_sim.agent.observation import global_observation
 
+from marl_sim.render.pygame_renderer import PygameRenderer
+
 
 def _sample_free_pose(
     grid: OccupancyGrid,
@@ -92,6 +94,8 @@ class MultiCarEnv:
         self.step_count: int = 0
         # [新增] 初始化通信缓存字段
         self._last_comm = None
+        # 修改 __post_init__ 增加渲染器占位
+        self._renderer: Optional[PygameRenderer] = None
 
     @property
     def n_agents(self) -> int:
@@ -217,9 +221,32 @@ class MultiCarEnv:
 
         return StepResult(obs=obs, reward=reward, done=done, info=info)
 
-    def render(self) -> None:
-        """(预留接口) 可视化渲染"""
-        return None
+    def render(self, mode="human") -> None:
+        """补全渲染接口"""
+        if self.cfg.render.enabled:
+            if self._renderer is None:
+                # 延迟初始化渲染器
+                self._renderer = PygameRenderer(
+                    grid=self.grid,
+                    cell_px=int(self.cfg.render.cell_px),
+                    fps=int(self.cfg.render.fps),
+                    caption="MARL Simulator Training"
+                )
+
+            # 处理窗口事件
+            if not self._renderer.pump_events():
+                return
+
+            # 准备渲染数据
+            # 注意：这里需要从 self._last_comm 获取 edges
+            edges = self._last_comm.edges if self._last_comm else []
+
+            self._renderer.draw(
+                states=self.states,
+                goals=self.goals,
+                step_count=self.step_count,
+                edges=edges
+            )
 
     def close(self) -> None:
         """(预留接口) 资源释放"""
