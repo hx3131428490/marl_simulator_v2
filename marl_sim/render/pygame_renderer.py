@@ -91,31 +91,43 @@ class PygameRenderer:
         if edges is None:
             edges = []
 
-        # 1. 绘制目标点 (Goals)
-        for i, (gx, gy) in enumerate(goals):
-            sx, sy = self.world_to_screen(float(gx), float(gy))
-            pygame.draw.circle(self.screen, colors.GOAL, (sx, sy), 5, 0)
-
-        # [新增] 2. 绘制通信连线 (Communication Edges)
-        # 建议在画车之前画线，这样线会被车压在下面，视觉上更自然
-        for (i, j) in edges:
-            si = states[i]
-            sj = states[j]
-            x0, y0 = self.world_to_screen(float(si.x), float(si.y))
-            x1, y1 = self.world_to_screen(float(sj.x), float(sj.y))
-            # 颜色需要在 colors.py 中定义 COMM_EDGE，或者直接写 (0, 255, 255) 青色
-            # 假设您已在 colors.py 定义了 COMM_EDGE = (0, 200, 200)
-            # 如果没有，可以直接用 RGB 元组
-            line_color = getattr(colors, 'COMM_EDGE', (0, 200, 200))
-            pygame.draw.line(self.screen, line_color, (x0, y0), (x1, y1), 2)
+        # # 1. 绘制目标点 (Goals)
+        # for i, (gx, gy) in enumerate(goals):
+        #     sx, sy = self.world_to_screen(float(gx), float(gy))
+        #     pygame.draw.circle(self.screen, colors.GOAL, (sx, sy), 5, 0)
+        #
+        # # [新增] 2. 绘制通信连线 (Communication Edges)
+        # # 建议在画车之前画线，这样线会被车压在下面，视觉上更自然
+        # for (i, j) in edges:
+        #     si = states[i]
+        #     sj = states[j]
+        #     x0, y0 = self.world_to_screen(float(si.x), float(si.y))
+        #     x1, y1 = self.world_to_screen(float(sj.x), float(sj.y))
+        #     # 颜色需要在 colors.py 中定义 COMM_EDGE，或者直接写 (0, 255, 255) 青色
+        #     # 假设您已在 colors.py 定义了 COMM_EDGE = (0, 200, 200)
+        #     # 如果没有，可以直接用 RGB 元组
+        #     line_color = getattr(colors, 'COMM_EDGE', (0, 200, 200))
+        #     pygame.draw.line(self.screen, line_color, (x0, y0), (x1, y1), 2)
 
         # 3. 绘制智能体 (Agents)
         for i, s in enumerate(states):
-            sx, sy = self.world_to_screen(float(s.x), float(s.y))
+            # 1. 根据身份逻辑确定基础颜色
+            if i == 0:
+                # 领导者：亮红色
+                base_color = (255, 0, 0)
+            else:
+                # 从车：天蓝色
+                base_color = (0, 100, 255)
 
-            col = colors.AGENT_ALT if bool(collided[i]) else colors.AGENT
+            # 2. 检查碰撞状态：如果撞了，变成橙色(AGENT_ALT)，没撞则使用上面定义的 base_color
+            # 这样既能区分领航者，又能保留碰撞提示
+            col = colors.AGENT_ALT if bool(collided[i]) else base_color
+
+            # 3. 执行绘制
+            sx, sy = self.world_to_screen(float(s.x), float(s.y))
             pygame.draw.circle(self.screen, col, (sx, sy), 7, 0)
 
+            # 4. 绘制航向线 (保持不变)
             hx = float(s.x + 0.6 * np.cos(float(s.theta)) * self.grid.resolution * 3.0)
             hy = float(s.y + 0.6 * np.sin(float(s.theta)) * self.grid.resolution * 3.0)
             hx_s, hy_s = self.world_to_screen(hx, hy)
