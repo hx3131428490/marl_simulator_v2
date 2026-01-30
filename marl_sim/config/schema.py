@@ -7,8 +7,8 @@ from typing import Any, Mapping, Tuple
 @dataclass
 class MapConfig:
     """地图基础尺寸与分辨率配置"""
-    width_cells: int = 80
-    height_cells: int = 60
+    width_cells: int = 100
+    height_cells: int = 50
     resolution: float = 0.1
 
     def validate(self) -> None:
@@ -112,7 +112,7 @@ class SimConfig:
 
     formation_weight: float = 2.0  # 编队位置误差权重
     yaw_weight: float = 1.0  # 航向一致性权重
-    collision_penalty: float = 10.0  # 碰撞惩罚
+    collision_penalty: float = 0.0  # 碰撞惩罚
 
     def validate(self) -> None:
         if self.dt <= 0:

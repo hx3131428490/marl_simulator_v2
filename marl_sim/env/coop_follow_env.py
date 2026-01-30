@@ -43,7 +43,21 @@ class CoopFollowEnv:
         follower_actions[0] -> env agent 1
         follower_actions[1] -> env agent 2
         """
-        a0 = np.asarray(self.leader_ctrl.get_action(), dtype=np.float32)
+
+        """
+            follower_actions 只包含两台从车的动作，键为 0 和 1
+            """
+        # 获取领航者状态
+        leader_state = self.env.states[0]
+
+        # 【修复点】直接访问 self.env.grid，而不是 self.env.world.grid
+        grid = self.env.grid
+
+        # 传入状态和地图进行预判避障
+        a0 = np.asarray(self.leader_ctrl.get_action(leader_state, grid), dtype=np.float32)
+
+        # ... 后续逻辑保持不变 ...
+        # 注意：确保您之前修改的 LeaderController.get_action 接口支持 (state, grid) 参数
 
         # 先按 MultiCarEnv 的总智能体数补齐所有动作
         n_total = getattr(self.env, "n_agents", None)
@@ -63,7 +77,23 @@ class CoopFollowEnv:
 
         step_res = self.env.step(all_actions)
 
-        reward = float(self._compute_coop_reward())
+        # 1. 计算原有的协作势函数奖励 (Progress Reward)
+        coop_reward = float(self._compute_coop_reward())
+
+        # 2. 引入普通任务奖励：碰撞惩罚
+        # follower 0 对应底层 agent 1, follower 1 对应底层 agent 2
+        p_coll = self.env.cfg.collision_penalty  # 基础配置中的碰撞惩罚值
+        total_penalty = 0.0
+
+        if step_res.info["collided"][1]:  # 从车 1 发生碰撞
+            total_penalty -= p_coll
+        if step_res.info["collided"][2]:  # 从车 2 发生碰撞
+            total_penalty -= p_coll
+
+        # 3. 最终奖励融合
+        reward = coop_reward + total_penalty
+
+        # reward = float(self._compute_coop_reward())
         obs = self._get_coop_obs()
         dones = step_res.done
         return obs, reward, dones, step_res.info
